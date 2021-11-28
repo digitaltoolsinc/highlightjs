@@ -1,0 +1,125 @@
+<html>
+
+<head>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initialize();
+        }, false);
+
+
+        function initialize() {
+
+            document.getElementById("search").onclick = function() {
+                highlight_word()
+            };
+
+            document.getElementById("search_text").addEventListener("keyup", function(event) {
+                // Number 13 is the "Enter" key on the keyboard
+                if (event.keyCode === 13) {
+                    // Cancel the default action, if needed
+                    event.preventDefault();
+                    // Trigger the button element with a click
+                    document.getElementById("search").click();
+                }
+            });
+        }
+
+        function highlight_word() {
+            var test = document.getElementById("testDiv");
+            var originalHtml = test.innerHTML;
+            test.innerHTML = originalHtml;
+            try {
+                var regex = new RegExp(document.getElementById("search_text").value, "g");
+                highlight(test, regex);
+            } catch (e) {
+                test.innerText = e;
+            }
+        }
+
+        function highlight(element, regex) {
+            var nodes = [],
+                text = "",
+                node,
+                nodeIterator = document.createNodeIterator(element, NodeFilter.SHOW_TEXT, null, false);
+
+            while (node = nodeIterator.nextNode()) {
+                nodes.push({
+                    textNode: node,
+                    start: text.length
+                });
+                text += node.nodeValue
+            }
+
+            if (!nodes.length)
+                return;
+
+            var match;
+            while (match = regex.exec(text)) {
+                var matchLength = match[0].length;
+
+                // Prevent empty matches causing infinite loops        
+                if (!matchLength) {
+                    regex.lastIndex++;
+                    continue;
+                }
+
+                for (var i = 0; i < nodes.length; ++i) {
+                    node = nodes[i];
+                    var nodeLength = node.textNode.nodeValue.length;
+
+                    // Skip nodes before the match
+                    if (node.start + nodeLength <= match.index)
+                        continue;
+
+                    // Break after the match
+                    if (node.start >= match.index + matchLength)
+                        break;
+
+                    // Split the start node if required
+                    if (node.start < match.index) {
+                        nodes.splice(i + 1, 0, {
+                            textNode: node.textNode.splitText(match.index - node.start),
+                            start: match.index
+                        });
+                        continue;
+                    }
+
+                    // Split the end node if required
+                    if (node.start + nodeLength > match.index + matchLength) {
+                        nodes.splice(i + 1, 0, {
+                            textNode: node.textNode.splitText(match.index + matchLength - node.start),
+                            start: match.index + matchLength
+                        });
+                    }
+
+                    // Highlight the current node
+                    var spanNode = document.createElement("span");
+                    spanNode.className = "highlight";
+
+                    node.textNode.parentNode.replaceChild(spanNode, node.textNode);
+                    spanNode.appendChild(node.textNode);
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .highlight {
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
+
+    <body>
+        <div id="wrapper">
+            <input type="text" id="search_text">
+            <input type="button" value="search" id="search">
+            <div>
+                <p id="testDiv">The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most
+                    common words. Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators. To achieve this, it would be necessary to have uniform grammar, pronunciation and more common words. If several
+                    languages coalesce, the grammar of the resulting language is more simple and regular than that of the individual languages. The new common language will be more simple and regular than the existing European languages.</p>
+            </div>
+        </div>
+    </body>
+
+</html>
