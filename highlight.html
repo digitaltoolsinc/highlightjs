@@ -24,20 +24,59 @@
             });
         }
 
-        function highlight_word() {
-            var test = document.getElementById("testDiv");
-            var originalHtml = test.innerHTML;
-            test.innerHTML = originalHtml;
-            try {
-                var regex = new RegExp(document.getElementById("search_text").value, "g");
-                highlight(test, regex);
-            } catch (e) {
-                test.innerText = e;
+        function findMatchInText(text, match) {
+            let indices = new Array();
+            for (var i = 0; i < text.length; i++) {
+                var k = 0;
+                var haveAMatch = true;
+
+
+
+                if (text[i] == '\\' && (i == 0 || text[i - 1] != '\\'))
+                    i += 2
+                if (text[i] == '&') {
+                    let index = text.substring(i).indexOf(';')
+                    i = (index - i) + 1
+                }
+
+
+                let localIndices = Array();
+                let start = true;
+                while (k < match.length && i < text.length) {
+                    if (text[i].toLowerCase() == match[k].toLowerCase()) {
+                        if (start == true) {
+                            if (text.length - i < match.length)
+                                break;
+                            localIndices.push(i);
+                            start = false;
+                        }
+                        i++;
+                        k++;
+                    } else {
+                        haveAMatch = false;
+                        localIndices.length = 0;
+                        break;
+                    }
+
+                }
+                if (!haveAMatch)
+                    continue;
+                else {
+
+                    for (let k = 0; k < localIndices.length; k++)
+                        indices.push(localIndices[k]);
+                }
             }
+            return indices;
         }
 
-        function highlight(element, regex) {
+        function highlight_word() {
+            var word = document.getElementById("search_text").value;
+            highlight(document.body, word);
 
+        }
+
+        function highlight(element, word) {
 
             var b = document.getElementsByClassName('highlight');
 
@@ -55,62 +94,47 @@
                 nodeIterator = document.createNodeIterator(element, NodeFilter.SHOW_TEXT, null, false);
 
             while (node = nodeIterator.nextNode()) {
+                console.log("Node value: " + node.nodeValue);
                 nodes.push({
                     textNode: node,
-                    start: text.length
+                    start: 0
                 });
-                text += node.nodeValue
             }
 
             if (!nodes.length)
                 return;
 
-            var match;
-            while (match = regex.exec(text)) {
-                var matchLength = match[0].length;
 
-                // Prevent empty matches causing infinite loops        
-                if (!matchLength) {
-                    regex.lastIndex++;
-                    continue;
-                }
 
-                for (var i = 0; i < nodes.length; ++i) {
-                    node = nodes[i];
-                    var nodeLength = node.textNode.nodeValue.length;
+            for (var i = 0; i < nodes.length; ++i) {
+                node = nodes[i];
+                var nodeLength = node.textNode.nodeValue.length;
 
-                    // Skip nodes before the match
-                    if (node.start + nodeLength <= match.index)
-                        continue;
+                indices = findMatchInText(node.textNode.textContent, word);
+                let toSubtract = 0;
 
-                    // Break after the match
-                    if (node.start >= match.index + matchLength)
-                        break;
+                for (let m = 0; m < indices.length; m++) {
 
-                    // Split the start node if required
-                    if (node.start < match.index) {
-                        nodes.splice(i + 1, 0, {
-                            textNode: node.textNode.splitText(match.index - node.start),
-                            start: match.index
-                        });
-                        continue;
-                    }
+                    nodes.splice(i + 1, 0, {
+                        textNode: node.textNode.splitText(indices[m] - toSubtract + word.length),
+                        //start: word.index
+                    });
+                    toSubtract += word.length;
 
-                    // Split the end node if required
-                    if (node.start + nodeLength > match.index + matchLength) {
-                        nodes.splice(i + 1, 0, {
-                            textNode: node.textNode.splitText(match.index + matchLength - node.start),
-                            start: match.index + matchLength
-                        });
-                    }
 
                     // Highlight the current node
                     var spanNode = document.createElement("span");
                     spanNode.className = "highlight";
 
-                    node.textNode.parentNode.replaceChild(spanNode, node.textNode);
+                    node.textNode.parentNode.replaceChild(spanNode, nodes[i].textNode);
                     spanNode.appendChild(node.textNode);
+
+                    node = nodes[++i]
+
                 }
+
+
+
             }
         }
     </script>
@@ -127,9 +151,18 @@
             <input type="text" id="search_text">
             <input type="button" value="search" id="search">
             <div>
-                <p id="testDiv">The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most
+                <p>the</p>
+            </div>
+            <div>
+                <p>This a test</p>
+            </div>
+            <div id='testDiv'>
+                <p>The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most
                     common words. Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators. To achieve this, it would be necessary to have uniform grammar, pronunciation and more common words. If several
                     languages coalesce, the grammar of the resulting language is more simple and regular than that of the individual languages. The new common language will be more simple and regular than the existing European languages.</p>
+            </div>
+            <div>
+                <p>This the test</p>
             </div>
         </div>
     </body>
