@@ -54,7 +54,7 @@
                         break;
                     }
                 }
-                if (haveAMatch && i < text.length - 1 && text[i] != ' ')
+                if (haveAMatch && i < text.length - 1 && isAlpha(text[i]))
                     haveAMatch = false;
                 if (!haveAMatch)
                     continue;
@@ -62,14 +62,32 @@
                     return i - match.length;
             }
             return -1;
-
         }
 
         function highlight_word() {
             var word = document.getElementById("search_text").value;
-            highlight(document.body, word);
+            if (!isAlpha(word))
+                alert('Please enter in only letters');
+            else
+                highlight(document.body, word);
 
         }
+
+        function isAlpha(str) {
+            var code, i, len;
+
+            for (i = 0, len = str.length; i < len; i++) {
+                code = str.charCodeAt(i);
+                if (!(code > 64 && code < 91) && // upper alpha (A-Z)
+                    !(code > 96 && code < 123)
+                    //!(code > 47 && code < 58) && // numeric (0-9)
+                ) { // lower alpha (a-z)
+
+                    return false;
+                }
+            }
+            return true;
+        };
 
         function highlight(element, word) {
 
@@ -99,8 +117,6 @@
             if (!nodes.length)
                 return;
 
-
-
             for (var i = 0; i < nodes.length; ++i) {
                 node = nodes[i];
                 var nodeLength = node.textNode.nodeValue.length;
@@ -126,23 +142,12 @@
                     continue;
                 }
 
-
-
-                // nodes.splice(i, 0, {
-                //     textNode: node.textNode.splitText(indices[m] - toSubtract + word.length),
-                //     //start: word.index
-                // });
-                // toSubtract += word.length;
-
-
                 // Highlight the current node
                 var spanNode = document.createElement("span");
                 spanNode.className = "highlight";
 
                 node.textNode.parentNode.replaceChild(spanNode, nodes[i].textNode);
                 spanNode.appendChild(node.textNode);
-
-                // node = nodes[++i]
 
             }
         }
