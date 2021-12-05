@@ -25,12 +25,9 @@
         }
 
         function findMatchInText(text, match) {
-            let indices = new Array();
             for (var i = 0; i < text.length; i++) {
                 var k = 0;
                 var haveAMatch = true;
-
-
 
                 if (text[i] == '\\' && (i == 0 || text[i - 1] != '\\'))
                     i += 2
@@ -39,35 +36,31 @@
                     i = (index - i) + 1
                 }
 
-
                 let localIndices = Array();
                 let start = true;
                 while (k < match.length && i < text.length) {
                     if (text[i].toLowerCase() == match[k].toLowerCase()) {
                         if (start == true) {
-                            if (text.length - i < match.length)
+                            if (text.length - i < match.length) {
+                                haveAMatch = false;
                                 break;
-                            localIndices.push(i);
+                            }
                             start = false;
                         }
                         i++;
                         k++;
                     } else {
                         haveAMatch = false;
-                        localIndices.length = 0;
                         break;
                     }
-
                 }
                 if (!haveAMatch)
                     continue;
-                else {
-
-                    for (let k = 0; k < localIndices.length; k++)
-                        indices.push(localIndices[k]);
-                }
+                else
+                    return i - match.length;
             }
-            return indices;
+            return -1;
+
         }
 
         function highlight_word() {
@@ -110,30 +103,44 @@
                 node = nodes[i];
                 var nodeLength = node.textNode.nodeValue.length;
 
-                indices = findMatchInText(node.textNode.textContent, word);
-                let toSubtract = 0;
+                startIndex = findMatchInText(node.textNode.textContent, word);
+                if (startIndex < 0)
+                    continue;
 
-                for (let m = 0; m < indices.length; m++) {
-
+                var bar;
+                if (startIndex == 0) {
+                    bar = node.textNode.splitText(startIndex + word.length);
                     nodes.splice(i + 1, 0, {
-                        textNode: node.textNode.splitText(indices[m] - toSubtract + word.length),
-                        //start: word.index
+                        textNode: bar,
+                        start: 0
                     });
-                    toSubtract += word.length;
-
-
-                    // Highlight the current node
-                    var spanNode = document.createElement("span");
-                    spanNode.className = "highlight";
-
-                    node.textNode.parentNode.replaceChild(spanNode, nodes[i].textNode);
-                    spanNode.appendChild(node.textNode);
-
-                    node = nodes[++i]
-
+                }
+                if (startIndex > 0) {
+                    bar = node.textNode.splitText(startIndex);
+                    nodes.splice(i + 1, 0, {
+                        textNode: bar,
+                        start: 0
+                    });
+                    continue;
                 }
 
 
+
+                // nodes.splice(i, 0, {
+                //     textNode: node.textNode.splitText(indices[m] - toSubtract + word.length),
+                //     //start: word.index
+                // });
+                // toSubtract += word.length;
+
+
+                // Highlight the current node
+                var spanNode = document.createElement("span");
+                spanNode.className = "highlight";
+
+                node.textNode.parentNode.replaceChild(spanNode, nodes[i].textNode);
+                spanNode.appendChild(node.textNode);
+
+                // node = nodes[++i]
 
             }
         }
